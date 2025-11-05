@@ -1,0 +1,61 @@
+version: "3.9"
+
+name: pokedx-stack
+
+networks:
+  pokenet:
+    driver: bridge
+
+volumes:
+  pgdata:
+
+services:
+  db:
+    image: postgres:16
+    container_name: pokedx-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pokenet
+
+  backend:
+    build:
+      context: ./backend
+    container_name: pokedx-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS}
+    ports:
+      - "8000:8000"
+    networks:
+      - pokenet
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: pokedx-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    networks:
+      - pokenet
+

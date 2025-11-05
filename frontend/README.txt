@@ -1,0 +1,1 @@
+Frontend corregido: ejecuta con 'python -m http.server 5500' y conéctate a http://localhost:5500/login.html
